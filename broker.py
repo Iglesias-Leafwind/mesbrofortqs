@@ -59,6 +59,7 @@ def read(conn,mask):
         return
     
     data = conn.recv(int(data.decode('utf-8')))
+    print(f'{userInfo["encrypted"]} --> {tipo}')
     #sabendo que tipo de informação esta encryptada vai traduzir para um dicionario
     if(userInfo['encrypted'] == "JSON"):
            data = data.decode('utf-8')
@@ -115,34 +116,42 @@ def read(conn,mask):
                 if(user["conn"] == conn):
                     user["accepting"] = True
                     break
-        #vai buscar todos os clientes desse topico
-        message = TopicQueue[data["topic"]][0]
-        TopicQueue[data["topic"]].remove(message)
-        LastMessage[data["topic"]] = message
-        for connection in TopicSubscribed[data["topic"]]:
-            #procura nos consumers cada cliente
-            for info in Consumer:
-                #se encontrar o cliente registado nesse topico e como consumer
-                if(info["conn"] == connection):
-                    print(TopicSubscribed[data["topic"]]["accepting"])
-                    if(TopicSubscribed[data["topic"]]["accepting"]):
-                        #codifica no metodo de encriptação que este cliente usa e envia a mensagem para ele
-                        connection.send(converter({"topic":data["topic"],"data":message},info["encrypted"]))
-                        break
-
     else:
         print("HOPtion "+data["op"]+" not recognized.")
     #print(Consumer)
     #print(Producer)
     #print(TopicSubscribed)
     #print(LastMessage)
-    return
+
+def sendtoconsumers():
+    global Consumer
+    global TopicQueue
+    global TopicSubscribed
+    global LastMessage
+    for topic in TopicQueue:
+        if(TopicQueue[topic] != [] and not(False in [disc["accepting"] for disc in TopicSubscribed[topic]])):
+            for i in range(0,len(TopicSubscribed[topic])):
+                TopicSubscribed[topic][i]["accepting"] = False
+            #vai buscar todos os clientes desse topico
+            message = TopicQueue[topic][0]
+            TopicQueue[topic].remove(message)
+            LastMessage[topic] = message
+            for connection in TopicSubscribed[topic]:
+                #procura nos consumers cada cliente
+                for info in Consumer:
+                    #se encontrar o cliente registado nesse topico e como consumer
+                    if(info["conn"] == connection["conn"]):
+                        #codifica no metodo de encriptação que este cliente usa e envia a mensagem para ele
+                        connection["conn"].send(converter({"topic":topic,"data":message},info["encrypted"]))
+                        break
+
 #this is the 1st message
 def fm(conn, mask):
     global Consumer
     global Producer
     global TopicSubscribed
-    
+    global TopicQueue
+
     data = conn.recv(8)
     data = conn.recv(int(data.decode('utf-8')))
     data = data.decode('utf-8')
@@ -154,7 +163,7 @@ def fm(conn, mask):
             TopicSubscribed[data[1]].append({"conn":conn,"accepting":False})
         else:
             TopicSubscribed[data[1]] = [{"conn":conn,"accepting":False}]
-        if(data[1] in LastMessage):
+        if(data[1] in LastMessage and TopicQueue[data[1]] == []):
             conn.send(converter({"topic":data[1],"data":LastMessage[data[1]]},data[2]))
     else:					#Producer = 2
         Producer = Producer + [{"conn":conn,"topic":data[1],"encrypted":data[2]}]
@@ -191,6 +200,7 @@ sel.register(sys.stdin, selectors.EVENT_READ, close)
 sel.register(sock, selectors.EVENT_READ, accept)
 
 while True:
+    sendtoconsumers()
     events = sel.select()
     for key, mask in events:
         callback = key.data
