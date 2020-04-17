@@ -59,6 +59,7 @@ def read(conn,mask):
         return
     
     data = conn.recv(int(data.decode('utf-8')))
+    print(f'{userInfo["encrypted"]} --> {tipo}')
     #sabendo que tipo de informação esta encryptada vai traduzir para um dicionario
     if(userInfo['encrypted'] == "JSON"):
            data = data.decode('utf-8')
@@ -129,6 +130,8 @@ def sendtoconsumers():
     global LastMessage
     for topic in TopicQueue:
         if(TopicQueue[topic] != [] and not(False in [disc["accepting"] for disc in TopicSubscribed[topic]])):
+            for i in range(0,len(TopicSubscribed[topic])):
+                TopicSubscribed[topic][i]["accepting"] = False
             #vai buscar todos os clientes desse topico
             message = TopicQueue[topic][0]
             TopicQueue[topic].remove(message)
