@@ -1,0 +1,17 @@
+TO DO LIST
+
+1-por o broker bonito de ler
+3-middleware bonito de ler
+
+
+CREATE filas de mensagens no broker para lidar com a sobrecarga de mensagens
+
+extra make topics with subtrees
+subscrever "/" subscreve tudo
+subscrever "/weather" subscreve todas subtrees
+subscrever "/weather/pressure" subscreve a pressure e todas subtrees
+todo
+se for "/" subscrever tudo
+split por "/" se tiver 2 palavras aka um array de 2 palavras 
+subscrever so à ultima palavra
+se for so 1 palavra subscrever a essa e todos subconjuntos(provavelmente guardado numa lista) ou criar uma tree
